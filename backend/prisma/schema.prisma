@@ -1,0 +1,90 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  student
+  faculty
+  admin
+}
+
+enum ActivityCategory {
+  academic
+  certification
+  internship
+  sports
+  cultural
+  volunteering
+  leadership
+  research
+}
+
+enum ActivityStatus {
+  pending
+  approved
+  rejected
+}
+
+model User {
+  id           Int      @id @default(autoincrement())
+  name         String
+  email        String   @unique
+  passwordHash String
+  role         Role
+  department   String?
+  createdAt    DateTime @default(now())
+
+  studentProfile   StudentProfile?
+  activities       Activity[]       @relation("StudentActivities")
+  reviewedActivities Activity[]     @relation("ReviewerActivities")
+  notifications    Notification[]
+}
+
+model StudentProfile {
+  id           Int    @id @default(autoincrement())
+  userId       Int    @unique
+  user         User   @relation(fields: [userId], references: [id])
+  enrollmentNo String @unique
+  program      String
+  year         Int
+  cgpa         Float  @default(0)
+  shareToken   String @unique
+}
+
+model Activity {
+  id               Int              @id @default(autoincrement())
+  studentId        Int
+  student          User             @relation("StudentActivities", fields: [studentId], references: [id])
+  category         ActivityCategory
+  title            String
+  description      String
+  proofFileUrl     String?
+  status           ActivityStatus   @default(pending)
+  pointsAwarded    Int              @default(0)
+  submittedAt      DateTime         @default(now())
+  reviewedById     Int?
+  reviewer         User?            @relation("ReviewerActivities", fields: [reviewedById], references: [id])
+  reviewedAt       DateTime?
+  remarks          String?
+  verificationHash String?
+}
+
+model CategoryWeight {
+  id             Int              @id @default(autoincrement())
+  category       ActivityCategory @unique
+  pointsPerActivity Int
+}
+
+model Notification {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
+  message   String
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
